@@ -18,9 +18,20 @@ let socketCounter = 0;
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+// Friendly Root Page
+app.get("/", (req, res) => {
+    res.send(`
+        <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1 style="color: #0284c7;">📱 F7 Remote VPS Signaling Server is ONLINE!</h1>
+            <p>WebSocket URL: <code>wss://bionic-f7-remote-connection.onrender.com</code></p>
+            <p>Status: Active | Active Devices Registered: ${devices.size}</p>
+        </div>
+    `);
+});
+
 // HTTP Endpoints
 app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+    res.json({ status: "ok", timestamp: new Date().toISOString(), activeDevices: devices.size });
 });
 
 app.get("/api/devices", (req, res) => {
@@ -51,14 +62,12 @@ wss.on("connection", (ws) => {
 
     ws.on("close", () => {
         console.log(`[${socketId}] WebSocket closed.`);
-        // Clean up if this was a registered device
         devices.forEach((val, id) => {
             if (val.ws === ws) {
                 devices.delete(id);
                 console.log(`[Device Disconnected] ${id}`);
             }
         });
-        // Clean up if operator
         operators.delete(socketId);
     });
 
